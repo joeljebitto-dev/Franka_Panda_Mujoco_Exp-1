@@ -22,7 +22,9 @@ export function Viewport({ viewportRef, frameSrc, grabbing, phase, runState, act
     >
       {frameSrc ? (
         <img alt="Live MuJoCo render of the robot arm moving a cube" draggable={false} src={frameSrc} />
-      ) : null}
+      ) : (
+        <div className="viewport-empty">Waiting for renderer</div>
+      )}
       <div className="viewport-hud">
         <span>{phase}</span>
         <span>{runState}</span>

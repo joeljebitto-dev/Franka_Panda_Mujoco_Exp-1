@@ -64,9 +64,12 @@ async def configure_scene(
     payload: SceneRequest,
     simulator: PickPlaceSimulator = Depends(get_simulator),
 ) -> dict:
-    return simulator.configure_scene(
-        pickup_x=payload.pickup_x,
-        pickup_y=payload.pickup_y,
-        target_x=payload.target_x,
-        target_y=payload.target_y,
-    )
+    try:
+        return simulator.configure_scene(
+            pickup_x=payload.pickup_x,
+            pickup_y=payload.pickup_y,
+            target_x=payload.target_x,
+            target_y=payload.target_y,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

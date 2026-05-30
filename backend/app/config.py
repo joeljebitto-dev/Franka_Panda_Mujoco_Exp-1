@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from functools import lru_cache
+from math import isfinite
 from pathlib import Path
 
 
@@ -347,9 +348,12 @@ def _bounded_int(value: str, key: str, minimum: int, maximum: int) -> int:
 
 def _floating(value: str, key: str) -> float:
     try:
-        return float(value)
+        parsed = float(value)
     except ValueError as exc:
         raise ValueError(f"{key} must be a number") from exc
+    if not isfinite(parsed):
+        raise ValueError(f"{key} must be a finite number")
+    return parsed
 
 
 def _positive_float(value: str, key: str) -> float:

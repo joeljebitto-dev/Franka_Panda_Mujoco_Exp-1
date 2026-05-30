@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -13,9 +14,21 @@ from .mujoco_sim import PickPlaceSimulator
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title=settings.app_title)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        simulator = PickPlaceSimulator(settings)
+        app.state.settings = settings
+        app.state.simulator = simulator
+        try:
+            yield
+        finally:
+            simulator.close()
+            app.state.simulator = None
+
+    app = FastAPI(title=settings.app_title, lifespan=lifespan)
     app.state.settings = settings
-    app.state.simulator = PickPlaceSimulator(settings)
+    app.state.simulator = None
 
     app.include_router(simulation_router)
     app.include_router(view_router)

@@ -162,8 +162,18 @@ h2 {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
   pointer-events: none;
+}
+
+.viewport-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(250, 252, 249, 0.82);
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 
 .viewport-hud {

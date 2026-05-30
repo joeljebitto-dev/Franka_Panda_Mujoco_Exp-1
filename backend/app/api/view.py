@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..mujoco_sim import PickPlaceSimulator
 from ..view_controls import ViewPresetName
@@ -29,7 +29,10 @@ async def move_view(
     payload: ViewMoveRequest,
     simulator: PickPlaceSimulator = Depends(get_simulator),
 ) -> dict:
-    return simulator.move_view(payload.action, payload.dx, payload.dy)
+    try:
+        return simulator.move_view(payload.action, payload.dx, payload.dy)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/view/reset")
@@ -50,11 +53,14 @@ async def project_view(
     payload: ViewProjectRequest,
     simulator: PickPlaceSimulator = Depends(get_simulator),
 ) -> dict:
-    return simulator.project_view(
-        screen_x=payload.screen_x,
-        screen_y=payload.screen_y,
-        viewport_width=payload.viewport_width,
-        viewport_height=payload.viewport_height,
-        tool=payload.tool,
-        apply=payload.apply,
-    )
+    try:
+        return simulator.project_view(
+            screen_x=payload.screen_x,
+            screen_y=payload.screen_y,
+            viewport_width=payload.viewport_width,
+            viewport_height=payload.viewport_height,
+            tool=payload.tool,
+            apply=payload.apply,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

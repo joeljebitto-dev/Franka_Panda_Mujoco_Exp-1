@@ -158,6 +158,10 @@ class PickPlaceSimulator:
     ) -> dict:
         return self.reset((pickup_x, pickup_y), (target_x, target_y))
 
+    def close(self) -> None:
+        with self.lock:
+            self.renderer.close()
+
     def start(self) -> dict:
         with self.lock:
             self.interaction_mode = "auto"
@@ -197,14 +201,15 @@ class PickPlaceSimulator:
 
     def move_view(self, action: ViewMoveAction, dx: float = 0.0, dy: float = 0.0) -> dict:
         with self.lock:
+            movement = self._finite_array([dx, dy], "View movement", expected_shape=(2,))
             self._update_view_scene()
             move_camera(
                 self.model,
                 self.renderer.scene,
                 self.view_camera,
                 action,
-                float(dx),
-                float(dy),
+                float(movement[0]),
+                float(movement[1]),
                 self.settings.view.zoom_min,
                 self.settings.view.zoom_max,
             )
@@ -225,14 +230,19 @@ class PickPlaceSimulator:
         apply: bool = False,
     ) -> dict:
         with self.lock:
+            point = self._finite_array(
+                [screen_x, screen_y, viewport_width, viewport_height],
+                "Projection coordinates",
+                expected_shape=(4,),
+            )
             self._update_view_scene()
             hit = project_screen_to_plane(
                 self.model,
                 self.renderer.scene,
-                screen_x,
-                screen_y,
-                viewport_width,
-                viewport_height,
+                float(point[0]),
+                float(point[1]),
+                float(point[2]),
+                float(point[3]),
                 plane_z=self.settings.view.projection_plane_z,
                 min_viewport_size=self.settings.view.min_viewport_size,
                 frustum_epsilon=self.settings.view.frustum_epsilon,
@@ -270,11 +280,14 @@ class PickPlaceSimulator:
 
     def set_manual_targets(self, joints: list[float], gripper: float) -> dict:
         with self.lock:
-            targets = np.asarray(joints, dtype=float)
-            if targets.shape != (self.settings.arm_joint_count,):
-                raise ValueError(f"Manual control requires exactly {self.settings.arm_joint_count} joint targets")
+            targets = self._finite_array(
+                joints,
+                "Manual joint targets",
+                expected_shape=(self.settings.arm_joint_count,),
+            )
+            grip_input = self._finite_array([gripper], "Gripper target", expected_shape=(1,))
             targets = self._clamp_joints(targets)
-            grip = float(np.clip(gripper, self.closed_grip, self.open_grip))
+            grip = float(np.clip(grip_input[0], self.closed_grip, self.open_grip))
             self.interaction_mode = "manual"
             self.running = False
             self.complete = False
@@ -292,7 +305,8 @@ class PickPlaceSimulator:
 
     def render_jpeg(self, camera: CameraName | None = None) -> bytes:
         with self.lock:
-            self._step_simulation(self.settings.steps.render)
+            if self.running:
+                self._step_simulation(self.settings.steps.render)
             if camera is None:
                 self.renderer.update_scene(self.data, camera=self.view_camera)
             else:
@@ -525,6 +539,7 @@ class PickPlaceSimulator:
             self._set_cube_position(self.pickup_xy[0], self.pickup_xy[1], self.cube_half_size)
 
     def _clamp_xy(self, xy: np.ndarray) -> np.ndarray:
+        xy = self._finite_array(xy, "Workspace coordinates", expected_shape=(2,))
         bounds = self.settings.scene.marker_bounds
         return np.array(
             [
@@ -535,6 +550,20 @@ class PickPlaceSimulator:
 
     def _clamp_joints(self, joints: np.ndarray) -> np.ndarray:
         return np.clip(joints, self.joint_ranges[:, 0], self.joint_ranges[:, 1])
+
+    def _finite_array(
+        self,
+        values: np.ndarray | list[float] | tuple[float, ...],
+        label: str,
+        expected_shape: tuple[int, ...] | None = None,
+    ) -> np.ndarray:
+        array = np.asarray(values, dtype=float)
+        if expected_shape is not None and array.shape != expected_shape:
+            expected = "x".join(str(part) for part in expected_shape)
+            raise ValueError(f"{label} must have shape {expected}")
+        if not np.all(np.isfinite(array)):
+            raise ValueError(f"{label} must contain only finite numbers")
+        return array
 
     def _joint_limits(self) -> list[dict]:
         return [
