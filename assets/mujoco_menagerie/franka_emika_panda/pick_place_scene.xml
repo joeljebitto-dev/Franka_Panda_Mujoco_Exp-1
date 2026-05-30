@@ -1,0 +1,47 @@
+<mujoco model="panda pick place">
+  <include file="mjx_scene.xml"/>
+
+  <asset>
+    <material name="cube_blue" rgba="0.08 0.34 0.82 1"/>
+    <material name="pickup_pad" rgba="0.12 0.62 0.54 0.28"/>
+    <material name="target_pad" rgba="0.95 0.56 0.14 0.42"/>
+    <material name="target_ring" rgba="0.96 0.71 0.24 0.85"/>
+    <material name="rail_dark" rgba="0.12 0.13 0.15 1"/>
+  </asset>
+
+  <worldbody>
+    <geom name="pickup_pad" type="cylinder" pos="0.50 -0.22 0.006" size="0.09 0.006"
+      material="pickup_pad" contype="0" conaffinity="0"/>
+    <body mocap="true" name="target_marker" pos="0.50 0.22 0.012">
+      <geom name="target_zone" type="cylinder" size="0.09 0.006" material="target_pad"
+        contype="0" conaffinity="0"/>
+      <geom name="target_ring" type="cylinder" pos="0 0 0.006" size="0.095 0.002"
+        material="target_ring" contype="0" conaffinity="0"/>
+    </body>
+
+    <body name="box" pos="0.50 -0.22 0.025">
+      <freejoint name="box_joint"/>
+      <geom name="box_geom" type="box" size="0.025 0.025 0.025" mass="0.08"
+        condim="3" friction="1.2 0.04 0.004" material="cube_blue" contype="2"
+        conaffinity="1" solref="0.01 1"/>
+    </body>
+
+    <geom name="back_rail" type="box" pos="0.43 0.36 0.03" size="0.28 0.012 0.03"
+      material="rail_dark" contype="0" conaffinity="0"/>
+    <geom name="left_rail" type="box" pos="0.14 0.07 0.03" size="0.012 0.30 0.03"
+      material="rail_dark" contype="0" conaffinity="0"/>
+    <geom name="right_rail" type="box" pos="0.72 0.07 0.03" size="0.012 0.30 0.03"
+      material="rail_dark" contype="0" conaffinity="0"/>
+
+    <camera name="overview" pos="1.18 -1.05 0.82" xyaxes="0.72 0.70 0 -0.34 0.35 0.87" fovy="44"/>
+    <camera name="side" pos="0.86 -1.42 0.42" xyaxes="0.96 0.29 0 -0.10 0.34 0.94" fovy="38"/>
+    <camera name="wrist" mode="targetbody" target="hand" pos="0.82 -0.74 0.42"
+      xyaxes="0.72 0.70 0 -0.21 0.22 0.95" fovy="42"/>
+  </worldbody>
+
+  <keyframe>
+    <key name="home"
+      qpos="0 0.3 0 -1.57079 0 2.0 -0.7853 0.04 0.04 0.50 -0.22 0.025 1 0 0 0"
+      ctrl="0 0.3 0 -1.57079 0 2.0 -0.7853 0.04"/>
+  </keyframe>
+</mujoco>
